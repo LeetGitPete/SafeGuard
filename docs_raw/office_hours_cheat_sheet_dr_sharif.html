@@ -1,0 +1,163 @@
+
+<h2 class="sr-only">Office hours cheat sheet for meeting with Dr. Sharif about SafeGuard project</h2>
+<style>
+  .sheet { max-width: 680px; font-family: var(--font-sans); }
+  .header { margin-bottom: 1.5rem; }
+  .header h1 { font-size: 20px; font-weight: 500; margin: 0 0 4px; color: var(--color-text-primary); }
+  .header p { font-size: 13px; color: var(--color-text-secondary); margin: 0; }
+  .pillar { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 1rem 1.25rem; margin-bottom: 12px; cursor: pointer; transition: border-color 0.2s; }
+  .pillar:hover { border-color: var(--color-border-secondary); }
+  .pillar-head { display: flex; align-items: center; gap: 10px; }
+  .pillar-num { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 500; flex-shrink: 0; }
+  .pillar-title { font-size: 15px; font-weight: 500; color: var(--color-text-primary); flex: 1; }
+  .chevron { font-size: 16px; color: var(--color-text-tertiary); transition: transform 0.2s; }
+  .pillar.open .chevron { transform: rotate(180deg); }
+  .pillar-body { display: none; margin-top: 12px; padding-top: 12px; border-top: 0.5px solid var(--color-border-tertiary); }
+  .pillar.open .pillar-body { display: block; }
+  .layer { margin-bottom: 14px; }
+  .layer-label { font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+  .layer p, .pillar-body > p { font-size: 13px; color: var(--color-text-secondary); line-height: 1.6; margin: 0 0 6px; }
+  .tag { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: var(--border-radius-md); margin-right: 4px; margin-bottom: 4px; }
+  .tag-teal { background: var(--color-background-info); color: var(--color-text-info); }
+  .tag-amber { background: var(--color-background-warning); color: var(--color-text-warning); }
+  .tag-purple { background: #EEEDFE; color: #534AB7; }
+  .ref { font-size: 13px; color: var(--color-text-secondary); line-height: 1.7; margin: 0 0 6px; padding-left: 12px; border-left: 2px solid var(--color-border-tertiary); }
+  .tip { font-size: 13px; padding: 8px 12px; border-radius: var(--border-radius-md); margin-top: 10px; line-height: 1.6; }
+  .tip-blue { background: var(--color-background-info); color: var(--color-text-info); }
+  .tip-green { background: var(--color-background-success); color: var(--color-text-success); }
+  .opening { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 12px 16px; margin-bottom: 16px; font-size: 13px; color: var(--color-text-secondary); line-height: 1.7; }
+  @media (prefers-color-scheme: dark) {
+    .tag-purple { background: #26215C; color: #AFA9EC; }
+  }
+</style>
+<div class="sheet">
+  <div class="header">
+    <h1>Office hours cheat sheet</h1>
+    <p>Meeting with Dr. Sharif — SafeGuard: Prompt injection interception MCP for AI coding agents</p>
+  </div>
+
+  <div class="opening">
+    <strong style="color:var(--color-text-primary)">Opening pitch (30 sec):</strong> We're building an MCP server that sits between AI coding agents and the web. When an agent fetches a URL, our server intercepts it, scans the HTML for prompt injections and malicious content, and either passes it through or alerts the developer. First milestone: URL interception only. Think of it as an application-layer firewall for AI agents.
+  </div>
+
+  <div class="pillar open" onclick="this.classList.toggle('open')">
+    <div class="pillar-head">
+      <div class="pillar-num" style="background:var(--color-background-danger);color:var(--color-text-danger);">1</div>
+      <span class="pillar-title">Appropriate defenses</span>
+      <i class="ti ti-chevron-down chevron" aria-hidden="true"></i>
+    </div>
+    <div class="pillar-body">
+      <p>We use a defense-in-depth approach with three layers, not just "ask an LLM if it's safe":</p>
+      <div class="layer">
+        <div class="layer-label" style="color:var(--color-text-danger);">Layer 1 — Threat intelligence (pre-fetch)</div>
+        <p>Check the URL against known-malicious databases before even downloading the page. Instant block if the domain is flagged.</p>
+        <span class="tag tag-teal">URLhaus</span><span class="tag tag-teal">Google Safe Browsing</span><span class="tag tag-teal">PhishTank</span><span class="tag tag-teal">VirusTotal</span>
+      </div>
+      <div class="layer">
+        <div class="layer-label" style="color:var(--color-text-warning);">Layer 2 — Structural analysis (post-fetch)</div>
+        <p>Parse the HTML with BeautifulSoup and flag content that is intentionally hidden from humans but readable by machines. The mere presence of hidden text is a red flag.</p>
+        <span class="tag tag-amber">display:none divs</span><span class="tag tag-amber">zero-font text</span><span class="tag tag-amber">white-on-white</span><span class="tag tag-amber">hidden iframes</span><span class="tag tag-amber">obfuscated scripts</span><span class="tag tag-amber">metadata injections</span>
+      </div>
+      <div class="layer">
+        <div class="layer-label" style="color:var(--color-text-info);">Layer 3 — Semantic analysis (LLM-as-judge)</div>
+        <p>Pass the cleaned text to a fast, dedicated screening model (Claude Haiku or Bedrock Guardrails) with one job: "Is this text an instruction directed at an AI agent, or normal content meant for humans?" Returns a structured risk score.</p>
+        <span class="tag tag-purple">Claude Haiku API</span><span class="tag tag-purple">Amazon Bedrock Guardrails</span>
+      </div>
+      <div class="tip tip-green">
+        <strong>Key point:</strong> Each layer catches different things. Layer 1 catches known-bad URLs cheaply. Layer 2 catches hiding techniques regardless of content. Layer 3 catches novel injections that don't match known patterns. We can measure each layer's contribution independently.
+      </div>
+    </div>
+  </div>
+
+  <div class="pillar" onclick="this.classList.toggle('open')">
+    <div class="pillar-head">
+      <div class="pillar-num" style="background:var(--color-background-info);color:var(--color-text-info);">2</div>
+      <span class="pillar-title">Specific prior work</span>
+      <i class="ti ti-chevron-down chevron" aria-hidden="true"></i>
+    </div>
+    <div class="pillar-body">
+      <p>Our project builds directly on established research in three areas:</p>
+      <div class="layer">
+        <div class="layer-label" style="color:var(--color-text-primary);">Foundational attack research</div>
+        <p class="ref"><strong>Greshake et al. (2023)</strong> — "Not what you've signed up for" — Formalized indirect prompt injection: attackers embed instructions in external content (web pages, emails, documents) that LLMs process. Published at AISec '23. This is the core threat model for our project.</p>
+        <p class="ref"><strong>Aichberger et al. (2025)</strong> [ref 1 in course doc] — Attacking multimodal OS agents with malicious image patches.</p>
+        <p class="ref"><strong>Li et al. (2025)</strong> [ref 9 in course doc] — Commercial LLM agents are already vulnerable to simple yet dangerous attacks.</p>
+      </div>
+      <div class="layer">
+        <div class="layer-label" style="color:var(--color-text-primary);">Benchmarks we'll evaluate against</div>
+        <p class="ref"><strong>BIPIA</strong> (Microsoft, Yi et al. 2023/2025) — First benchmark for indirect prompt injection attacks. 5 application scenarios, 250 attacker goals. Published at KDD '25. All 25 tested LLMs were found vulnerable.</p>
+        <p class="ref"><strong>LLMail-Inject</strong> (SaTML 2025) — 208K+ unique attack prompts in a realistic email assistant scenario.</p>
+        <p class="ref"><strong>PINT Benchmark</strong> (Lakera) — 4,314 labeled inputs across English and non-English.</p>
+      </div>
+      <div class="layer">
+        <div class="layer-label" style="color:var(--color-text-primary);">Existing defense frameworks (inspiration)</div>
+        <p class="ref"><strong>Lakera Guard</strong> — Commercial real-time prompt injection API. 98%+ detection, sub-50ms latency. Acquired by Check Point in 2025.</p>
+        <p class="ref"><strong>NVIDIA NeMo Guardrails</strong> — Open-source programmable conversation rails for LLM apps.</p>
+        <p class="ref"><strong>Amazon Bedrock Guardrails</strong> — Native prompt attack detection filters on AWS.</p>
+      </div>
+      <div class="tip tip-blue">
+        <strong>Framing for Dr. Sharif:</strong> Lakera/NeMo/Bedrock protect LLM apps at the API level. Our contribution is different: we protect AI agents at the tool level via MCP — intercepting content before it enters the agent's context window. This is a "shift-left" approach.
+      </div>
+    </div>
+  </div>
+
+  <div class="pillar" onclick="this.classList.toggle('open')">
+    <div class="pillar-head">
+      <div class="pillar-num" style="background:var(--color-background-warning);color:var(--color-text-warning);">3</div>
+      <span class="pillar-title">System architecture</span>
+      <i class="ti ti-chevron-down chevron" aria-hidden="true"></i>
+    </div>
+    <div class="pillar-body">
+      <p>Hybrid cloud-local architecture. The local MCP server handles agent communication and the human-in-the-loop UI. The cloud backend (AWS) handles the dangerous fetch and all scanning in isolation.</p>
+      <div style="background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:12px 16px;font-family:var(--font-mono);font-size:12px;line-height:1.8;color:var(--color-text-secondary);margin:8px 0;white-space:pre;">Agent calls safe_fetch(url)
+  → Local MCP server forwards URL to AWS
+  → AWS Lambda fetches HTML in isolation
+  → Layer 1: Threat intel check (URLhaus, Safe Browsing)
+  → Layer 2: BeautifulSoup strips hidden content
+  → Layer 3: Bedrock / Haiku semantic scan
+  → Risk assessment returned to local MCP
+  → Low risk: clean text passed to agent silently
+  → High risk: terminal alert → user approves/blocks</div>
+      <p><strong>Why hybrid:</strong> Fetching untrusted URLs locally risks SSRF or sandbox escapes. Cloud isolation means malicious payloads never touch the developer's machine. But the human-in-the-loop UI stays local for instant, frictionless alerts.</p>
+      <p><strong>Budget:</strong> ~$150 total. EC2 t3.small (~$35/4mo) + Claude API for semantic scanning (~$20) + free threat intel APIs. Plenty of headroom.</p>
+      <div class="tip tip-blue">
+        <strong>If he asks about enforcement:</strong> System prompt instructions are our first layer (tell Claude Code to always use safe_fetch). For stronger enforcement, we can set HTTP_PROXY/HTTPS_PROXY to route all agent traffic through a local mitmproxy that forwards to our scanner. We'll measure the gap between soft and hard enforcement in our evaluation.
+      </div>
+    </div>
+  </div>
+
+  <div class="pillar" onclick="this.classList.toggle('open')">
+    <div class="pillar-head">
+      <div class="pillar-num" style="background:var(--color-background-success);color:var(--color-text-success);">4</div>
+      <span class="pillar-title">Usability aspects</span>
+      <i class="ti ti-chevron-down chevron" aria-hidden="true"></i>
+    </div>
+    <div class="pillar-body">
+      <p>This is the workshop angle — we're not just building security, we're building usable security.</p>
+      <div class="layer">
+        <div class="layer-label" style="color:var(--color-text-success);">Preventing alert fatigue</div>
+        <p>Clean URLs load instantly with zero friction — the developer doesn't even know the scan happened. Only genuinely suspicious content triggers an interruption. Configurable risk thresholds let developers tune sensitivity.</p>
+      </div>
+      <div class="layer">
+        <div class="layer-label" style="color:var(--color-text-success);">Actionable terminal alerts</div>
+        <p>When something is flagged, the alert shows exactly what was found, where in the page, and why it's suspicious — not a generic "blocked" message. The developer can approve, block, or open a full scan report with one keystroke.</p>
+      </div>
+      <div class="layer">
+        <div class="layer-label" style="color:var(--color-text-success);">Transparency via scan reports</div>
+        <p>A localhost web dashboard shows the full document with highlighted suspicious segments, risk breakdown by detection layer, and a timeline of the scan. Developers can verify the tool's decisions and build trust.</p>
+      </div>
+      <div class="layer">
+        <div class="layer-label" style="color:var(--color-text-success);">User study design</div>
+        <p>Within-subjects study: participants use a coding agent on tasks involving injected web content. Condition A: no protection. Condition B: SafeGuard active. Measure detection accuracy, response time, false positive tolerance, and SUS usability score.</p>
+      </div>
+      <div class="tip tip-green">
+        <strong>Key phrase to use:</strong> "Positive-sum design" — the tool improves security without degrading the development workflow. Clean sites have near-zero latency overhead. The developer only pays attention cost when there's a real threat.
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:16px;padding:12px 16px;background:var(--color-background-secondary);border-radius:var(--border-radius-md);">
+    <p style="font-size:13px;font-weight:500;color:var(--color-text-primary);margin:0 0 6px;">Closing ask</p>
+    <p style="font-size:13px;color:var(--color-text-secondary);margin:0;line-height:1.6;">We're focusing strictly on URL/HTML interception for the first milestone to keep the MVP achievable. Extensions to PDFs, documents, and files are planned if time permits. Does this scope feel right, and do you have any suggestions on the evaluation methodology or the defense layers?</p>
+  </div>
+</div>
