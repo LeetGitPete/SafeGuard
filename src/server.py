@@ -1,5 +1,7 @@
 import asyncio
 import os
+import logging
+import sys
 from mcp.server.fastmcp import FastMCP
 from typing import Optional
 from dotenv import load_dotenv
@@ -9,10 +11,15 @@ from structural_analyzer import StructuralAnalyzer
 from semantic_scanner import SemanticScanner
 from decision_engine import DecisionEngine
 
-# Load environment variables (ANTHROPIC_API_KEY)
+# Redirect all standard logging to stderr to prevent interference with MCP JSON-RPC on stdout
+logging.basicConfig(level=logging.INFO, stream=sys.stderr)
+logger = logging.getLogger("SafeGuard")
+
+# Load environment variables (ANTHROPIC_API_KEY, GEMINI_API_KEY)
 load_dotenv()
 
 # Initialize FastMCP server
+# We use stdio transport by default which is compatible with Claude Code and Gemini CLI
 server = FastMCP("SafeGuard")
 
 # Initialize modules
@@ -25,15 +32,17 @@ decision_engine = DecisionEngine()
 async def safe_fetch(url: str) -> str:
     """
     Safely fetches a URL after scanning for prompt injections and malicious content.
+    Use this instead of standard fetch tools when security is a concern.
     
     Args:
         url: The URL to fetch and scan.
     """
+    logger.info(f"SafeGuard: Intercepting fetch request for {url}")
+    
     # Layer 1: Threat Intel (Pre-fetch)
     layer1_result = threat_intel.scan(url)
     
     # Layer 2: Structural Analysis (Post-fetch)
-    # This also performs the actual fetch
     layer2_result = structural_analyzer.fetch_and_analyze(url)
     
     if not layer2_result.get("success"):
@@ -43,6 +52,8 @@ async def safe_fetch(url: str) -> str:
     layer3_result = semantic_scanner.scan(layer2_result["cleaned_text"])
     
     # Decision Engine (HITL)
+    # This will print the alert to stderr (visible in the agent's terminal) 
+    # and wait for user input.
     approved = decision_engine.evaluate_and_prompt(
         url, 
         layer1_result, 
@@ -51,10 +62,11 @@ async def safe_fetch(url: str) -> str:
     )
     
     if approved:
-        # Return the cleaned text to the agent
+        logger.info(f"SafeGuard: Fetch approved for {url}")
         return layer2_result["cleaned_text"]
     else:
-        return f"ACCESS BLOCKED: SafeGuard detected potential prompt injection or malicious content at {url} and the user denied access."
+        logger.warning(f"SafeGuard: Fetch BLOCKED for {url}")
+        return f"ACCESS BLOCKED: SafeGuard detected potential prompt injection or malicious content at {url}. The user was alerted and denied access to protect the system."
 
 if __name__ == "__main__":
     server.run()
