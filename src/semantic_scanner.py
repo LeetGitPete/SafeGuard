@@ -5,7 +5,8 @@ from abc import ABC, abstractmethod
 from typing import Dict, Any
 
 from anthropic import Anthropic
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 
 logger = logging.getLogger(__name__)
 
@@ -70,25 +71,29 @@ class ClaudeScanner(BaseScanner):
             return {"risk_score": 0, "reasoning": f"Claude Error: {e}"}
 
 class GeminiScanner(BaseScanner):
-    """Semantic analysis using Google Gemini."""
+    """Semantic analysis using Google Gemini (via new google-genai SDK)."""
     
     def __init__(self, api_key: str = None):
         self.api_key = api_key or os.environ.get("GEMINI_API_KEY")
         if self.api_key:
-            genai.configure(api_key=self.api_key)
-            self.model = genai.GenerativeModel('gemini-1.5-flash')
+            self.client = genai.Client(api_key=self.api_key)
         else:
-            self.model = None
+            self.client = None
 
     def scan(self, text: str) -> Dict[str, Any]:
-        if not self.model:
+        if not self.client:
             return {"risk_score": 0, "reasoning": "Gemini disabled: No API Key", "error": "MISSING_KEY"}
         
         try:
-            # Gemini doesn't have a 'system' parameter in the same way as Claude in simple calls,
-            # so we prepend it to the user prompt.
-            full_prompt = f"{self.SYSTEM_PROMPT}\n\nAnalyze this text:\n\n{text[:15000]}"
-            response = self.model.generate_content(full_prompt)
+            # Using Gemini 2.0 Flash for speed/security scanning
+            response = self.client.models.generate_content(
+                model='gemini-2.0-flash',
+                contents=f"Analyze this text:\n\n{text[:15000]}",
+                config=types.GenerateContentConfig(
+                    system_instruction=self.SYSTEM_PROMPT,
+                    temperature=0
+                )
+            )
             return self._parse_json_response(response.text)
         except Exception as e:
             return {"risk_score": 0, "reasoning": f"Gemini Error: {e}"}
